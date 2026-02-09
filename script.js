@@ -11,6 +11,10 @@ class Game2048 {
         this.container = document.getElementById('grid-container');
         this.scoreElement = document.getElementById('score');
         this.maxScoreElement = document.getElementById('maxscore');
+        
+        // 存储实际的 DOM 元素
+        this.tileElements = Array(this.gridSize).fill(null).map(() => Array(this.gridSize).fill(null));
+        
         this.init();
     }
 
@@ -35,6 +39,7 @@ class Game2048 {
     clearTiles() {
         const existingTiles = this.container.querySelectorAll('.tile');
         existingTiles.forEach(tile => tile.remove());
+        this.tileElements = Array(this.gridSize).fill(null).map(() => Array(this.gridSize).fill(null));
     }
 
     addRandomTile() {
@@ -51,7 +56,7 @@ class Game2048 {
             const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
             const value = Math.random() < 0.9 ? 2 : 4;
             this.grid[randomCell.row][randomCell.col] = value;
-            this.createTile(randomCell.row, randomCell.col, value);
+            this.tileElements[randomCell.row][randomCell.col] = this.createTile(randomCell.row, randomCell.col, value);
         }
     }
 
@@ -59,7 +64,12 @@ class Game2048 {
         const tile = document.createElement('div');
         tile.className = `tile tile-${value > 2048 ? 'super' : value}`;
         tile.textContent = value;
+        this.positionTile(tile, row, col);
+        this.container.appendChild(tile);
+        return tile;
+    }
 
+    positionTile(tile, row, col) {
         const styles = window.getComputedStyle(this.container);
         const padding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
         const gap = parseFloat(styles.gap) || 15;
@@ -72,25 +82,11 @@ class Game2048 {
         tile.style.height = `${tileSize}px`;
         tile.style.left = `${col * (tileSize + gap) + paddingOffset}px`;
         tile.style.top = `${row * (tileSize + gap) + paddingOffset}px`;
-        
-        this.container.appendChild(tile);
-    }
-
-    renderTiles() {
-        this.clearTiles();
-        for (let i = 0; i < this.gridSize; i++) {
-            for (let j = 0; j < this.gridSize; j++) {
-                if (this.grid[i][j] !== 0) {
-                    this.createTile(i, j, this.grid[i][j]);
-                }
-            }
-        }
     }
 
     updateDisplay() {
-        this.renderTiles();
+        // 更新分数
         this.scoreElement.textContent = this.score;
-        
         if (this.score > this.maxScore) {
             this.maxScore = this.score;
             localStorage.setItem('maxScore', this.maxScore);
@@ -114,6 +110,14 @@ class Game2048 {
             const prevState = this.history.pop();
             this.grid = prevState.grid;
             this.score = prevState.score;
+            this.clearTiles();
+            for (let i = 0; i < this.gridSize; i++) {
+                for (let j = 0; j < this.gridSize; j++) {
+                    if (this.grid[i][j] !== 0) {
+                        this.tileElements[i][j] = this.createTile(i, j, this.grid[i][j]);
+                    }
+                }
+            }
             this.updateDisplay();
         }
     }
@@ -127,87 +131,96 @@ class Game2048 {
 
         this.saveState();
 
-        const processLine = (line) => {
-            let filtered = line.filter(x => x !== 0);
-            let merged = [];
-            let i = 0;
-            
-            while (i < filtered.length) {
-                if (i + 1 < filtered.length && filtered[i] === filtered[i + 1]) {
-                    merged.push(filtered[i] * 2);
-                    scoreGained += filtered[i] * 2;
-                    i += 2;
-                } else {
-                    merged.push(filtered[i]);
-                    i++;
-                }
-            }
-            
-            while (merged.length < this.gridSize) {
-                merged.push(0);
-            }
-            
-            return merged;
-        };
-
-        const getLine = (index, direction) => {
-            let line = [];
-            for (let i = 0; i < this.gridSize; i++) {
-                switch (direction) {
-                    case 'left':
-                        line.push(this.grid[index][i]);
-                        break;
-                    case 'right':
-                        line.push(this.grid[index][this.gridSize - 1 - i]);
-                        break;
-                    case 'up':
-                        line.push(this.grid[i][index]);
-                        break;
-                    case 'down':
-                        line.push(this.grid[this.gridSize - 1 - i][index]);
-                        break;
-                }
-            }
-            return line;
-        };
-
-        const setLine = (index, line, direction) => {
-            for (let i = 0; i < this.gridSize; i++) {
-                switch (direction) {
-                    case 'left':
-                        this.grid[index][i] = line[i];
-                        break;
-                    case 'right':
-                        this.grid[index][this.gridSize - 1 - i] = line[i];
-                        break;
-                    case 'up':
-                        this.grid[i][index] = line[i];
-                        break;
-                    case 'down':
-                        this.grid[this.gridSize - 1 - i][index] = line[i];
-                        break;
-                }
-            }
-        };
+        // 记录移动前的元素
+        const oldTileElements = this.tileElements.map(row => [...row]);
+        this.tileElements = Array(this.gridSize).fill(null).map(() => Array(this.gridSize).fill(null));
 
         for (let i = 0; i < this.gridSize; i++) {
-            const oldLine = getLine(i, direction);
-            const newLine = processLine(oldLine);
-            setLine(i, newLine, direction);
-
+            let line = [];
+            let elements = [];
+            
+            // 获取当前行的值和元素
             for (let j = 0; j < this.gridSize; j++) {
-                if (oldLine[j] !== newLine[j]) {
+                let r, c;
+                if (direction === 'left') { r = i; c = j; }
+                else if (direction === 'right') { r = i; c = this.gridSize - 1 - j; }
+                else if (direction === 'up') { r = j; c = i; }
+                else if (direction === 'down') { r = this.gridSize - 1 - j; c = i; }
+                
+                if (this.grid[r][c] !== 0) {
+                    line.push(this.grid[r][c]);
+                    elements.push(oldTileElements[r][c]);
+                }
+            }
+
+            let mergedLine = [];
+            let mergedElements = [];
+            let k = 0;
+            while (k < line.length) {
+                if (k + 1 < line.length && line[k] === line[k + 1]) {
+                    const newValue = line[k] * 2;
+                    mergedLine.push(newValue);
+                    scoreGained += newValue;
+                    
+                    const tile1 = elements[k];
+                    const tile2 = elements[k + 1];
+                    
+                    // 记录合并后的元素（稍后处理）
+                    mergedElements.push({ tile: tile1, mergeWith: tile2, value: newValue });
+                    k += 2;
                     moved = true;
+                } else {
+                    mergedLine.push(line[k]);
+                    mergedElements.push({ tile: elements[k], value: line[k] });
+                    k++;
+                }
+            }
+
+            // 更新 grid 和执行移动动画
+            for (let j = 0; j < this.gridSize; j++) {
+                let r, c;
+                if (direction === 'left') { r = i; c = j; }
+                else if (direction === 'right') { r = i; c = this.gridSize - 1 - j; }
+                else if (direction === 'up') { r = j; c = i; }
+                else if (direction === 'down') { r = this.gridSize - 1 - j; c = i; }
+
+                const targetValue = j < mergedLine.length ? mergedLine[j] : 0;
+                if (this.grid[r][c] !== targetValue || (j < mergedLine.length && elements[j] !== mergedElements[j].tile)) {
+                    // 即使值没变，如果元素位置变了也算 moved
+                    if (targetValue !== 0) moved = true;
+                }
+
+                this.grid[r][c] = targetValue;
+
+                if (j < mergedElements.length) {
+                    const entry = mergedElements[j];
+                    const tile = entry.tile;
+                    
+                    // 移动主方块
+                    this.positionTile(tile, r, c);
+                    
+                    if (entry.mergeWith) {
+                        // 移动被合并的方块
+                        this.positionTile(entry.mergeWith, r, c);
+                        const secondTile = entry.mergeWith;
+                        
+                        // 动画结束后合并
+                        setTimeout(() => {
+                            tile.className = `tile tile-${entry.value > 2048 ? 'super' : entry.value} merged`;
+                            tile.textContent = entry.value;
+                            secondTile.remove();
+                        }, 100);
+                    }
+                    this.tileElements[r][c] = tile;
                 }
             }
         }
 
         if (moved) {
             this.score += scoreGained;
-            this.addRandomTile();
-            this.updateDisplay();
-
             setTimeout(() => {
+                this.addRandomTile();
+                this.updateDisplay();
                 this.isAnimating = false;
                 if (!this.canMove()) {
                     this.gameOver = true;
@@ -216,6 +229,7 @@ class Game2048 {
             }, 150);
         } else {
             this.history.pop();
+            this.tileElements = oldTileElements; // 恢复元素引用
             this.isAnimating = false;
         }
     }
@@ -223,17 +237,9 @@ class Game2048 {
     canMove() {
         for (let i = 0; i < this.gridSize; i++) {
             for (let j = 0; j < this.gridSize; j++) {
-                if (this.grid[i][j] === 0) {
-                    return true;
-                }
-                
-                if (i < this.gridSize - 1 && this.grid[i][j] === this.grid[i + 1][j]) {
-                    return true;
-                }
-                
-                if (j < this.gridSize - 1 && this.grid[i][j] === this.grid[i][j + 1]) {
-                    return true;
-                }
+                if (this.grid[i][j] === 0) return true;
+                if (i < this.gridSize - 1 && this.grid[i][j] === this.grid[i + 1][j]) return true;
+                if (j < this.gridSize - 1 && this.grid[i][j] === this.grid[i][j + 1]) return true;
             }
         }
         return false;
@@ -242,95 +248,54 @@ class Game2048 {
     setupEventListeners() {
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
-            
             if ((e.ctrlKey || e.metaKey) && key === 'z') {
                 e.preventDefault();
                 this.undo();
                 return;
             }
-            
             switch (key) {
-                case 'arrowup':
-                case 'w':
-                    e.preventDefault();
-                    this.move('up');
-                    break;
-                case 'arrowdown':
-                case 's':
-                    e.preventDefault();
-                    this.move('down');
-                    break;
-                case 'arrowleft':
-                case 'a':
-                    e.preventDefault();
-                    this.move('left');
-                    break;
-                case 'arrowright':
-                case 'd':
-                    e.preventDefault();
-                    this.move('right');
-                    break;
+                case 'arrowup': case 'w': e.preventDefault(); this.move('up'); break;
+                case 'arrowdown': case 's': e.preventDefault(); this.move('down'); break;
+                case 'arrowleft': case 'a': e.preventDefault(); this.move('left'); break;
+                case 'arrowright': case 'd': e.preventDefault(); this.move('right'); break;
             }
         });
 
-        document.getElementById('newGameBtn').addEventListener('click', () => {
-            this.newGame();
-        });
+        document.getElementById('newGameBtn').addEventListener('click', () => this.newGame());
+        document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+        document.getElementById('tryAgainBtn').addEventListener('click', () => this.newGame());
 
-        document.getElementById('undoBtn').addEventListener('click', () => {
-            this.undo();
-        });
-
-        document.getElementById('tryAgainBtn').addEventListener('click', () => {
-            this.newGame();
-        });
-
-        // 防抖 resize 处理
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                this.updateDisplay();
+                for (let i = 0; i < this.gridSize; i++) {
+                    for (let j = 0; j < this.gridSize; j++) {
+                        if (this.tileElements[i][j]) {
+                            this.positionTile(this.tileElements[i][j], i, j);
+                        }
+                    }
+                }
             }, 100);
         });
 
         let touchStartX, touchStartY;
-
         document.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
-
         document.addEventListener('touchend', (e) => {
             if (!touchStartX || !touchStartY) return;
-
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const minSwipeDistance = 50;
-
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                if (Math.abs(deltaX) > minSwipeDistance) {
-                    if (deltaX > 0) {
-                        this.move('right');
-                    } else {
-                        this.move('left');
-                    }
-                }
-            } else {
-                if (Math.abs(deltaY) > minSwipeDistance) {
-                    if (deltaY > 0) {
-                        this.move('down');
-                    } else {
-                        this.move('up');
-                    }
+            const deltaX = e.changedTouches[0].clientX - touchStartX;
+            const deltaY = e.changedTouches[0].clientY - touchStartY;
+            if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) > 50) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    this.move(deltaX > 0 ? 'right' : 'left');
+                } else {
+                    this.move(deltaY > 0 ? 'down' : 'up');
                 }
             }
-
-            touchStartX = null;
-            touchStartY = null;
+            touchStartX = null; touchStartY = null;
         });
     }
 
@@ -344,6 +309,4 @@ class Game2048 {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    new Game2048();
-});
+document.addEventListener('DOMContentLoaded', () => new Game2048());
