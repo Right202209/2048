@@ -7,11 +7,15 @@ class Game2048 {
         this.gameOver = false;
         this.history = [];
         this.maxHistory = 10;
+        this.isAnimating = false;
+        this.container = document.getElementById('grid-container');
+        this.scoreElement = document.getElementById('score');
+        this.maxScoreElement = document.getElementById('maxscore');
         this.init();
     }
 
     init() {
-        this.updateMaxScoreDisplay();
+        this.maxScoreElement.textContent = this.maxScore;
         this.setupEventListeners();
         this.newGame();
     }
@@ -29,8 +33,7 @@ class Game2048 {
     }
 
     clearTiles() {
-        const container = document.getElementById('grid-container');
-        const existingTiles = container.querySelectorAll('.tile');
+        const existingTiles = this.container.querySelectorAll('.tile');
         existingTiles.forEach(tile => tile.remove());
     }
 
@@ -46,22 +49,22 @@ class Game2048 {
 
         if (emptyCells.length > 0) {
             const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            this.grid[randomCell.row][randomCell.col] = Math.random() < 0.9 ? 2 : 4;
-            this.createTile(randomCell.row, randomCell.col, this.grid[randomCell.row][randomCell.col]);
+            const value = Math.random() < 0.9 ? 2 : 4;
+            this.grid[randomCell.row][randomCell.col] = value;
+            this.createTile(randomCell.row, randomCell.col, value);
         }
     }
 
     createTile(row, col, value) {
-        const container = document.getElementById('grid-container');
         const tile = document.createElement('div');
         tile.className = `tile tile-${value > 2048 ? 'super' : value}`;
         tile.textContent = value;
 
-        const styles = window.getComputedStyle(container);
+        const styles = window.getComputedStyle(this.container);
         const padding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
         const gap = parseFloat(styles.gap) || 15;
         
-        const containerWidth = container.clientWidth - padding;
+        const containerWidth = this.container.clientWidth - padding;
         const tileSize = (containerWidth - (this.gridSize - 1) * gap) / this.gridSize;
         const paddingOffset = parseFloat(styles.paddingLeft);
         
@@ -70,7 +73,7 @@ class Game2048 {
         tile.style.left = `${col * (tileSize + gap) + paddingOffset}px`;
         tile.style.top = `${row * (tileSize + gap) + paddingOffset}px`;
         
-        container.appendChild(tile);
+        this.container.appendChild(tile);
     }
 
     renderTiles() {
@@ -86,17 +89,13 @@ class Game2048 {
 
     updateDisplay() {
         this.renderTiles();
-        document.getElementById('score').textContent = this.score;
+        this.scoreElement.textContent = this.score;
         
         if (this.score > this.maxScore) {
             this.maxScore = this.score;
             localStorage.setItem('maxScore', this.maxScore);
-            this.updateMaxScoreDisplay();
+            this.maxScoreElement.textContent = this.maxScore;
         }
-    }
-
-    updateMaxScoreDisplay() {
-        document.getElementById('maxscore').textContent = this.maxScore;
     }
 
     saveState() {
@@ -120,10 +119,11 @@ class Game2048 {
     }
 
     move(direction) {
-        if (this.gameOver) return;
+        if (this.gameOver || this.isAnimating) return;
 
         let moved = false;
         let scoreGained = 0;
+        this.isAnimating = true;
 
         this.saveState();
 
@@ -207,14 +207,17 @@ class Game2048 {
             this.addRandomTile();
             this.updateDisplay();
 
-            if (!this.canMove()) {
-                this.gameOver = true;
-                this.showGameOver();
-            }
+            setTimeout(() => {
+                this.isAnimating = false;
+                if (!this.canMove()) {
+                    this.gameOver = true;
+                    this.showGameOver();
+                }
+            }, 150);
         } else {
             this.history.pop();
+            this.isAnimating = false;
         }
-    }
     }
 
     canMove() {
@@ -238,20 +241,32 @@ class Game2048 {
 
     setupEventListeners() {
         document.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case 'ArrowUp':
+            const key = e.key.toLowerCase();
+            
+            if ((e.ctrlKey || e.metaKey) && key === 'z') {
+                e.preventDefault();
+                this.undo();
+                return;
+            }
+            
+            switch (key) {
+                case 'arrowup':
+                case 'w':
                     e.preventDefault();
                     this.move('up');
                     break;
-                case 'ArrowDown':
+                case 'arrowdown':
+                case 's':
                     e.preventDefault();
                     this.move('down');
                     break;
-                case 'ArrowLeft':
+                case 'arrowleft':
+                case 'a':
                     e.preventDefault();
                     this.move('left');
                     break;
-                case 'ArrowRight':
+                case 'arrowright':
+                case 'd':
                     e.preventDefault();
                     this.move('right');
                     break;
@@ -270,8 +285,13 @@ class Game2048 {
             this.newGame();
         });
 
+        // 防抖 resize 处理
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            this.updateDisplay();
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.updateDisplay();
+            }, 100);
         });
 
         let touchStartX, touchStartY;
@@ -289,9 +309,10 @@ class Game2048 {
 
             const deltaX = touchEndX - touchStartX;
             const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
 
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                if (Math.abs(deltaX) > 30) {
+                if (Math.abs(deltaX) > minSwipeDistance) {
                     if (deltaX > 0) {
                         this.move('right');
                     } else {
@@ -299,7 +320,7 @@ class Game2048 {
                     }
                 }
             } else {
-                if (Math.abs(deltaY) > 30) {
+                if (Math.abs(deltaY) > minSwipeDistance) {
                     if (deltaY > 0) {
                         this.move('down');
                     } else {
@@ -315,11 +336,11 @@ class Game2048 {
 
     showGameOver() {
         document.getElementById('finalScore').textContent = this.score;
-        document.getElementById('gameOverOverlay').style.display = 'flex';
+        document.getElementById('gameOverOverlay').classList.add('visible');
     }
 
     hideGameOver() {
-        document.getElementById('gameOverOverlay').style.display = 'none';
+        document.getElementById('gameOverOverlay').classList.remove('visible');
     }
 }
 

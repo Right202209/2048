@@ -9,8 +9,9 @@ A classic 2048 puzzle game clone inspired by [simonaking.com/2048](https://simon
 - Score tracking with persistent high score (saved in localStorage)
 - Responsive design - works on desktop and mobile devices
 - Tile merging animations
-- Game over detection
+- Game over detection with overlay
 - New game button
+- Undo functionality (up to 10 moves)
 
 ## How to Play
 
@@ -24,13 +25,15 @@ A classic 2048 puzzle game clone inspired by [simonaking.com/2048](https://simon
 
 - **Arrow Up/Down/Left/Right** - Move tiles in that direction
 - **Touch/Swipe** - Swipe in the direction you want to move tiles
+- **Ctrl/Cmd + Z** - Undo last move
 - **New Game Button** - Start a fresh game
+- **Undo Button** - Undo your last move (up to 10 moves)
 
 ## File Structure
 
 ```
 2048/
-├── index.html    # Main HTML structure
+├── index.html    # Main HTML structure with game-over overlay
 ├── style.css     # Game styling and animations
 ├── script.js     # Game logic and event handling
 └── README.md     # This file
