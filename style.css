@@ -36,25 +36,25 @@ body::after {
     border-radius: 24px;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.9;
-    animation: floatSquares 22s ease-in-out infinite;
+    opacity: 1;
+    animation: floatSquares 16s ease-in-out infinite;
 }
 
 body::after {
-    filter: blur(1px);
-    opacity: 0.55;
-    animation: floatSquares 28s ease-in-out infinite reverse;
+    filter: blur(0.5px);
+    opacity: 0.75;
+    animation: floatSquares 20s ease-in-out infinite reverse;
 }
 
 @keyframes floatSquares {
     0% {
-        transform: translate3d(0, 0, 0) rotate(0deg);
+        transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     }
     50% {
-        transform: translate3d(12px, -10px, 0) rotate(1.2deg);
+        transform: translate3d(26px, -18px, 0) rotate(2.4deg) scale(1.03);
     }
     100% {
-        transform: translate3d(0, 0, 0) rotate(0deg);
+        transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     }
 }
 
