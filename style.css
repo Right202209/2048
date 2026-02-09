@@ -17,6 +17,53 @@ body {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    inset: -10% -10%;
+    background:
+        linear-gradient(0deg, rgba(187, 173, 160, 0.14) 0 0) 12% 18%/70px 70px,
+        linear-gradient(0deg, rgba(238, 228, 218, 0.55) 0 0) 28% 62%/44px 44px,
+        linear-gradient(0deg, rgba(238, 228, 218, 0.42) 0 0) 76% 22%/60px 60px,
+        linear-gradient(0deg, rgba(187, 173, 160, 0.18) 0 0) 86% 70%/36px 36px,
+        linear-gradient(0deg, rgba(238, 228, 218, 0.38) 0 0) 58% 88%/52px 52px;
+    background-repeat: no-repeat;
+    border-radius: 24px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.9;
+    animation: floatSquares 22s ease-in-out infinite;
+}
+
+body::after {
+    filter: blur(1px);
+    opacity: 0.55;
+    animation: floatSquares 28s ease-in-out infinite reverse;
+}
+
+@keyframes floatSquares {
+    0% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+        transform: translate3d(12px, -10px, 0) rotate(1.2deg);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+}
+
+header,
+#grid-container,
+.button-group,
+.instructions {
+    position: relative;
+    z-index: 1;
 }
 
 .github-corner:hover .octo-arm {
@@ -64,6 +111,19 @@ header {
     margin-bottom: 30px;
 }
 
+.scoreboard {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.score-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
 #title {
     font-size: 80px;
     font-weight: bold;
@@ -83,7 +143,6 @@ header {
     padding: 5px 15px;
     border-radius: 5px;
     font-size: 18px;
-    margin: 0 10px;
     min-width: 100px;
     text-align: center;
 }
@@ -356,6 +415,14 @@ header {
     
     .lang {
         font-size: 14px;
+    }
+
+    .scoreboard {
+        gap: 8px;
+    }
+
+    .score-row {
+        gap: 8px;
     }
     
     .counter {
