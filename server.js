@@ -10,7 +10,11 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 30000,
+  max: 5,
+  query_timeout: 10000
 });
 
 app.use(cors());
