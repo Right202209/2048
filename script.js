@@ -302,22 +302,34 @@ class Game2048 {
     showGameOver() {
         document.getElementById('finalScore').textContent = this.score;
         document.getElementById('gameOverOverlay').classList.add('visible');
-        this.promptSubmitScore();
+
+        // 延迟显示提交分数弹窗
+        setTimeout(() => {
+            this.showSubmitScoreDialog();
+        }, 500);
     }
 
     hideGameOver() {
         document.getElementById('gameOverOverlay').classList.remove('visible');
     }
 
-    async promptSubmitScore() {
+    showSubmitScoreDialog() {
         if (this.score === 0) return;
 
-        const playerName = prompt('恭喜！请输入你的名字提交到排行榜：');
-        if (playerName && playerName.trim()) {
-            await this.submitScore(playerName.trim(), this.score);
-            // 提交成功后跳转到排行榜页面
-            window.location.href = 'leaderboard.html';
-        }
+        const overlay = document.getElementById('submitScoreOverlay');
+        const scoreSpan = document.getElementById('submitScore');
+        const input = document.getElementById('playerNameInput');
+
+        scoreSpan.textContent = this.score;
+        input.value = '';
+        overlay.classList.add('visible');
+
+        // 自动聚焦输入框
+        setTimeout(() => input.focus(), 100);
+    }
+
+    hideSubmitScoreDialog() {
+        document.getElementById('submitScoreOverlay').classList.remove('visible');
     }
 
     async submitScore(playerName, score) {
@@ -332,13 +344,49 @@ class Game2048 {
 
             if (response.ok) {
                 console.log('Score submitted successfully');
+                return true;
             }
+            return false;
         } catch (error) {
             console.error('Error submitting score:', error);
+            return false;
         }
+    }
+
+    setupSubmitScoreListeners() {
+        const submitBtn = document.getElementById('submitScoreBtn');
+        const skipBtn = document.getElementById('skipSubmitBtn');
+        const input = document.getElementById('playerNameInput');
+
+        submitBtn.addEventListener('click', async () => {
+            const playerName = input.value.trim();
+            if (playerName) {
+                await this.submitScore(playerName, this.score);
+                this.hideSubmitScoreDialog();
+                window.location.href = 'leaderboard.html';
+            } else {
+                input.focus();
+                input.style.borderColor = '#f67c5f';
+                setTimeout(() => {
+                    input.style.borderColor = '#bbada0';
+                }, 500);
+            }
+        });
+
+        skipBtn.addEventListener('click', () => {
+            this.hideSubmitScoreDialog();
+        });
+
+        // 按 Enter 键提交
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitBtn.click();
+            }
+        });
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new Game2048();
+    const game = new Game2048();
+    game.setupSubmitScoreListeners();
 });
