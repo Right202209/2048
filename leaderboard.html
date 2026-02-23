@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="renderer" content="webkit">
+    <meta name="author" content="Simon Ma">
+    <meta name="theme-color" content="#e9e8e8">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#e9e8e8">
+    <meta name="msapplication-navbutton-color" content="#e9e8e8">
+    <title>排行榜 - 2048 Game</title>
+    <meta name="description" content="2048游戏排行榜，查看全球玩家的最高分数">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
+
+    <header class="fade">
+        <h1 id="title">排行榜</h1>
+        <a href="index.html" class="back-link">← 返回游戏</a>
+    </header>
+
+    <div class="leaderboard-container fade">
+        <div id="leaderboard" class="leaderboard">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadLeaderboard() {
+            const leaderboardEl = document.getElementById('leaderboard');
+
+            try {
+                const response = await fetch('http://localhost:3000/api/leaderboard');
+                const data = await response.json();
+
+                if (data.error || data.length === 0) {
+                    leaderboardEl.innerHTML = '<div class="loading">暂无记录</div>';
+                    return;
+                }
+
+                leaderboardEl.innerHTML = data.map((entry, index) => {
+                    const date = new Date(entry.created_at);
+                    const dateStr = date.toLocaleDateString('zh-CN');
+                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+
+                    return `
+                        <div class="leaderboard-item ${index < 3 ? 'top-three' : ''}">
+                            <span class="leaderboard-rank">${medal || '#' + (index + 1)}</span>
+                            <div class="leaderboard-info">
+                                <span class="leaderboard-name">${entry.player_name}</span>
+                                <span class="leaderboard-date">${dateStr}</span>
+                            </div>
+                            <span class="leaderboard-score">${entry.score}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                leaderboardEl.innerHTML = '<div class="loading">加载失败，请检查服务器是否运行</div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadLeaderboard);
+
+        // 每30秒自动刷新排行榜
+        setInterval(loadLeaderboard, 30000);
+    </script>
+</body>
+</html>

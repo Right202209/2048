@@ -1,49 +1,83 @@
-# 2048 Game
+# 2048 游戏 - 带排行榜
 
-A classic 2048 puzzle game clone inspired by [simonaking.com/2048](https://simonaking.com/2048/).
+经典的 2048 游戏，集成了 Neon PostgreSQL 数据库的在线排行榜功能。
 
-## Features
+## 功能特性
 
-- Classic 2048 gameplay with smooth animations
-- Keyboard (arrow keys) and touch/swipe controls
-- Score tracking with persistent high score (saved in localStorage)
-- Responsive design - works on desktop and mobile devices
-- Tile merging animations
-- Game over detection with overlay
-- New game button
-- Undo functionality (up to 10 moves)
+- 经典 2048 游戏玩法
+- 撤销功能（最多10步）
+- 本地最高分记录
+- **在线排行榜（前10名）**
+- 响应式设计，支持移动端
+- 流畅的动画效果
 
-## How to Play
+## 安装和运行
 
-1. Use **arrow keys** on desktop or **swipe** on mobile to move tiles
-2. Tiles with the same number merge into one when they collide
-3. Each merge adds to your score
-4. Goal: Create a tile with the number 2048
-5. Game over when no more moves are possible
+### 1. 安装依赖
 
-## Controls
+```bash
+npm install
+```
 
-- **Arrow Up/Down/Left/Right** - Move tiles in that direction
-- **Touch/Swipe** - Swipe in the direction you want to move tiles
-- **Ctrl/Cmd + Z** - Undo last move
-- **New Game Button** - Start a fresh game
-- **Undo Button** - Undo your last move (up to 10 moves)
+### 2. 配置环境变量
 
-## File Structure
+`.env` 文件已经配置好了 Neon 数据库连接。
+
+### 3. 启动服务器
+
+```bash
+npm start
+```
+
+服务器将在 `http://localhost:3000` 启动。
+
+### 4. 打开游戏
+
+在浏览器中访问 `http://localhost:3000`
+
+## 游戏说明
+
+- 使用 **方向键** 或 **WASD** 键移动方块
+- 在移动端可以使用 **滑动手势**
+- 按 **Ctrl+Z** 或点击 **撤销** 按钮撤销上一步
+- 游戏结束后可以提交分数到排行榜
+
+## 文件结构
 
 ```
 2048/
-├── index.html    # Main HTML structure with game-over overlay
-├── style.css     # Game styling and animations
-├── script.js     # Game logic and event handling
-└── README.md     # This file
+├── index.html    # 主HTML文件
+├── style.css     # 样式和动画
+├── script.js     # 游戏逻辑
+├── server.js     # Express后端服务器
+├── .env          # 环境变量配置
+└── README.md     # 说明文档
 ```
 
-## Getting Started
+## API 接口
 
-Simply open `index.html` in any modern web browser to play the game.
+### 获取排行榜
+```
+GET /api/leaderboard
+```
 
-No build process or dependencies required - it's pure HTML, CSS, and JavaScript.
+### 提交分数
+```
+POST /api/score
+Content-Type: application/json
+
+{
+  "playerName": "玩家名称",
+  "score": 分数
+}
+```
+
+## 技术栈
+
+- 前端：原生 JavaScript + CSS3
+- 后端：Node.js + Express
+- 数据库：Neon PostgreSQL
+- 部署：可部署到任何支持 Node.js 的平台
 
 ## Browser Support
 

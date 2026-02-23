@@ -302,11 +302,43 @@ class Game2048 {
     showGameOver() {
         document.getElementById('finalScore').textContent = this.score;
         document.getElementById('gameOverOverlay').classList.add('visible');
+        this.promptSubmitScore();
     }
 
     hideGameOver() {
         document.getElementById('gameOverOverlay').classList.remove('visible');
     }
+
+    async promptSubmitScore() {
+        if (this.score === 0) return;
+
+        const playerName = prompt('恭喜！请输入你的名字提交到排行榜：');
+        if (playerName && playerName.trim()) {
+            await this.submitScore(playerName.trim(), this.score);
+            // 提交成功后跳转到排行榜页面
+            window.location.href = 'leaderboard.html';
+        }
+    }
+
+    async submitScore(playerName, score) {
+        try {
+            const response = await fetch('http://localhost:3000/api/score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ playerName, score })
+            });
+
+            if (response.ok) {
+                console.log('Score submitted successfully');
+            }
+        } catch (error) {
+            console.error('Error submitting score:', error);
+        }
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => new Game2048());
+document.addEventListener('DOMContentLoaded', () => {
+    new Game2048();
+});
