@@ -37,10 +37,15 @@
             const leaderboardEl = document.getElementById('leaderboard');
 
             try {
-                const response = await fetch('http://localhost:3000/api/leaderboard');
+                const response = await fetch('/api/leaderboard');
                 const data = await response.json();
 
-                if (data.error || data.length === 0) {
+                if (!response.ok) {
+                    leaderboardEl.innerHTML = `<div class="loading">${data.error || '加载失败，请稍后重试'}</div>`;
+                    return;
+                }
+
+                if (data.length === 0) {
                     leaderboardEl.innerHTML = '<div class="loading">暂无记录</div>';
                     return;
                 }

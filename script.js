@@ -334,7 +334,7 @@ class Game2048 {
 
     async submitScore(playerName, score) {
         try {
-            const response = await fetch('http://localhost:3000/api/score', {
+            const response = await fetch('/api/score', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -346,9 +346,13 @@ class Game2048 {
                 console.log('Score submitted successfully');
                 return true;
             }
+
+            const errorData = await response.json().catch(() => ({}));
+            alert(errorData.error || '提交失败，请稍后重试');
             return false;
         } catch (error) {
             console.error('Error submitting score:', error);
+            alert('网络错误，请检查服务器是否运行');
             return false;
         }
     }
@@ -361,9 +365,11 @@ class Game2048 {
         submitBtn.addEventListener('click', async () => {
             const playerName = input.value.trim();
             if (playerName) {
-                await this.submitScore(playerName, this.score);
-                this.hideSubmitScoreDialog();
-                window.location.href = 'leaderboard.html';
+                const ok = await this.submitScore(playerName, this.score);
+                if (ok) {
+                    this.hideSubmitScoreDialog();
+                    window.location.href = 'leaderboard.html';
+                }
             } else {
                 input.focus();
                 input.style.borderColor = '#f67c5f';
